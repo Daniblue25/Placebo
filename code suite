@@ -1,0 +1,186 @@
+```{r}
+# la question 2 sur le nombre de test positif durant les semaines
+install.packages("lattice")
+
+A1 <- URINETOX %>% select(SUBJID,VISID,URDRUGS,URRESULT) %>% filter(URDRUGS == 7)
+A1 <- A1 %>% select(- URDRUGS) 
+A1 <- A1 %>% filter(VISID !="TERM" & VISID !="SCRNBASE", VISID != "UNSCHD")
+A1
+
+unique(A1$VISID)
+unique(A1$VISID)
+
+# Il faut que j'arrive à combiner RDMCODE à A1
+cv <- RDMCODE %>% select(SUBJID,XTRTMT)
+lg <- full_join(cv,A1, by = "SUBJID")
+lg1 <- merge(cv,A1, by = "SUBJID", all.x = T)
+
+
+lg <- lg1 %>% filter(VISID !="TERM" & VISID !="SCRNBASE", VISID != "UNSCHD")
+
+na.omit(lg)
+summary(lg) #pour trouver le nombre de NA
+
+#Obtention d'une donnée que pour les test positifs
+lg2 <- lg %>% filter(lg$URRESULT == 0)
+
+
+#Renommons la variable XTRTMT
+#lg$XTRTMT <- factor(lg$XTRTMT,levels = c("0.25 mg","1.0 mg","4.0 mg","Placebo"), labels = c(0.25,1.0,4.0,0))
+
+
+
+t1 <- table(lg2$VISID,lg2$XTRTMT)
+
+t2 <- table(lg$VISID, lg$URRESULT)
+
+semaine1 <- mean(t2["WEEK1V1"])
+merge(t1,t2)
+
+#ggplot(lg, aes(VISID,URRESULT)) + geom_line(stat = "identity",position = "identity",na.rm = F)
+
+na.omit(merge(cv,A1, by ="SUBJID", all.x = T))
+
+
+
+```
+
+
+
+
+
+
+```{r}
+library(ggplot2)
+library(wesanderson)
+library(tidyverse)
+library(pander)
+library(gtsummary)
+library(flextable)
+
+tb1 <- tbl_summary(lg2, by = XTRTMT) # tableau des visites et test
+                   
+# Fonction de  la representation  
+
+  
+# Representation graphique géneral
+ggplot(lg2) + geom_bar(aes(x = VISID, fill = XTRTMT), position = "dodge") + labs(title = " Representation graphique")
+
+
+# Representation graphique que pour les premieres visites
+V1 <- lg2 %>% filter(VISID == c("WEEK1V1","WEEK2V1","WEEK3V1","WEEK4V1","WEEK5V1",
+                                                     "WEEK6V1","WEEK7V1","WEEK8V1"))
+
+
+ggplot(V1) + geom_bar(aes(x = VISID, fill = XTRTMT), position = "dodge") + labs(title = "Representation de la premiere visite")
+
+# Representation graphique que pour les 2eme visites
+V2 <- lg2 %>% filter(VISID==c("WEEK1V2","WEEK2V2","WEEK3V2","WEEK4V2","WEEK5V2",
+                                                     "WEEK6V2","WEEK7V2","WEEK8V2"))
+
+
+ggplot(V2) + geom_bar(aes(x = VISID, fill = XTRTMT), position = "dodge") + labs(title = "Representation de la deuxieme visite")
+
+# Representation graphique que pour les 3eme visites
+V3 <-  lg2 %>% filter(VISID==c("WEEK1V3","WEEK2V3","WEEK3V3","WEEK4V3","WEEK5V3",
+                                                     "WEEK6V3","WEEK7V3","WEEK8V3"))
+
+ggplot(V3) + geom_bar(aes(x = VISID,fill = XTRTMT), position = "dodge") + labs(title = "Representation de la troisième visite")
+
+
+
+```
+
+
+
+
+
+
+```{r}
+# Calcul de la proportion de test + des 8 semaines de chaque traitement
+
+N_pos <- lg %>% filter(lg$URRESULT == 1)
+table(N_pos$XTRTMT,N_pos$VISID)
+
+# Calcul de la proportion de test - des 8 semaines de chaque traitement
+N_pot <- lg %>% filter(lg$URRESULT == 0)
+table(N_pot$XTRTMT,N_pot$VISID)
+
+
+
+```
+
+
+```{r}
+#  OBJECTIF SECONDAIRE
+### Determination du nombre d'échantillon d'urine negatif 
+Urns <- select(URINETOX,URDRUGS, URRESULT)
+Urnn <- filter(Urns, URDRUGS == c(1,2,3,4,5,9), URRESULT == 0)
+Repons3 <- pander(table(Urnn$URDRUGS,Urnn$URRESULT))
+##Graphe d'appui
+hist(Urnn$URDRUGS, xlab = "Produits de test", ylab = "Effectif totale", main = "Echantillon d'urine negatif", probability = F, ylim = c())
+```
+
+
+```{r}
+## Détermination du nombre d'alcool test negatif
+# Faisons appel à la base ALBREATH
+
+ALBREATH <- read.csv("C:/Users/LENOVO/Documents/MASTER/M2/Application pratique/A applications pratiques/CSV/ALBREATH.csv", header = T, sep = ",")
+
+head(ALBREATH)
+
+
+```
+
+
+
+
+```{r}
+#Non-consommation faisant objet d'abus
+demog <- DEMOG %>% select(SUBJID,GENDER,MOSTPROB,SUBSTANC)
+
+demog <- demog %>% dplyr::filter(., SUBSTANC==11)
+table(demog$MOSTPROB) # le taux de la methephtamine est bien plus élévé
+
+```
+
+
+```{r}
+### Détermination de tout ce qui sont parti avant la fin du test
+ENDTRIAL <- read.csv("C:/Users/LENOVO/Documents/MASTER/M2/Application pratique/A applications pratiques/CSV/ENDTRIAL.csv",header = T, sep = ",")
+
+head(endtrial)
+endtrial <- ENDTRIAL %>% select(SUBJID,EARLYTRM,COMPLETE) %>% filter(COMPLETE==0)
+nrow(endtrial) ## = nombre de patient n'ayant pas fini le test 
+
+## Appel a la base HAND qui parle des pathologies
+HAND <- read.csv("C:/Users/LENOVO/Documents/MASTER/M2/Application pratique/A applications pratiques/CSV/HAMD.csv")
+head(HAND)
+hand <- HAND %>% select(SUBJID,VISID,MOOD,SUICIDE,GENITAL,PARANOID)
+
+#### patient ayant fini le test
+dan <- ENDTRIAL %>% select(SUBJID,EARLYTRM,COMPLETE) %>% filter(COMPLETE==1)
+
+ ### Join des 2 bases
+las <- full_join(hand,dan, by = "SUBJID", keep = F)
+rm(lis)
+# je vais créer un tableau en fonction des visites
+
+library(gtsummary)
+library(flextable)
+
+tas <- las %>% tbl_summary(by = VISID,
+                           label = list(MOOD, SUICIDE,GENITAL,PARANOID,EARLYTRM,COMPLETE),   
+                           statistic = list(all_continuous() ~ "{mean} ({sd})", # garder les conditions statistiques 
+                                            all_categorical() ~ "{n} / {N} ({p}%)"), # tout catégorie
+                           digits = all_continuous() ~ 2,
+                           missing_text = "(Manquant)") %>%
+  modify_header(label ~ "**Variable**") %>% # renomer le titre des variables
+  modify_spanning_header(c("stat_1", "stat_2","stat_3", "stat_4") ~ "**Analyse de Traitement**") %>% # Titre suivant les colonnes
+  modify_caption("**Table 1. Carasteristique du patient**") %>% bold_labels() %>% add_p()
+
+tas
+
+
+```
